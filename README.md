@@ -16,7 +16,8 @@ Users are strongly advised to comply with all applicable laws and regulations re
 We do not endorse or condone any illegal activities, and any such use of this tool is expressly discouraged.
 
 ## Requirements
-Latest Python
+- Google Chrome
+- Latest Python
 ```
 pip install selenium
 ```
