@@ -5,12 +5,14 @@ from webdriver_manager.chrome import ChromeDriverManager
 import time
 import base64
 import os
-import pathlib
+import shutil
 from fpdf import FPDF
 
 def main():
     email = ""
     password = ""
+
+    print("Initializing...")
 
     options = Options()
     options.add_experimental_option("detach", True)
@@ -35,7 +37,7 @@ def main():
     accessListElements = driver.find_elements("xpath", "//div[contains(@class, 'accessContainer')]")
     for element in accessListElements:
         bookName = element.find_element("xpath", ".//h2[@class='access__title']").text
-        question1 = input(f"Do you want to copy {bookName}? (yes/no):")
+        question1 = input(f"Do you want to copy {bookName}? (yes/no): ")
         if question1 == "yes":
             element.click()
             time.sleep(3)
@@ -131,7 +133,7 @@ def main():
         time.sleep(1)
 
 def png_to_pdf(bookName, img_count):
-    question = input("What would you prefer?\nMake a pdf with the copied pages (1)\nKeep the copied pages as a directory of images (2)\n\nAnswer (1 or 2):")
+    question = input("\nWhat would you prefer?\nMake a pdf with the copied pages (1)\nKeep the copied pages as a directory of images (2)\nQuit (3)\n\nAnswer (1, 2 or 3): ")
 
     if question == "1":
 
@@ -160,17 +162,50 @@ def png_to_pdf(bookName, img_count):
             pdf.image(image, 0, 0, 2640, 3263)
         pdf.output(f"{bookName}.pdf", "F")
 
+        save_progress(bookName)
+        clear_imgs()
         print(f"PDF file '{bookName}' created successfully.")
-        pathlib.Path.rmdir("imgs") 
+
+
     elif question == "2":
+
+        save_progress(bookName)
+
         try:
             os.rename("imgs", bookName)
             print(f"You can find {img_count} pages in /{bookName}")
         except:
             os.rename("imgs", "book")
             print(f"Your book has a weird name.\nYou can find {img_count} pages in /book")
+    
+    elif question == "3":
+        print("You successfully quited!")
+        save_progress(bookName)
+        clear_imgs()
+        
     else:
-        print("Chose an option between 1 and 2")
+        print("Chose an option between 1, 2 and 3")
         png_to_pdf()
+
+def save_progress(bookName):
+
+    # Create the directory if it doesn't exist
+    if not os.path.exists("save"):
+        os.makedirs("save")    
+
+    try:
+        shutil.copytree("imgs", os.path.join("save", bookName))
+
+    except shutil.Error as e:
+        print(f"Error: {e}")
+    except Exception as e:
+        print(f"Error: {e}")
+
+def clear_imgs():
+    try:
+        shutil.rmtree("imgs")
+
+    except Exception as e:
+        print(f"Error: {e}")
 
 main()
