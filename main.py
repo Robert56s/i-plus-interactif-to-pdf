@@ -8,6 +8,7 @@ import os
 import shutil
 from fpdf import FPDF
 
+
 def main():
     email = ""
     password = ""
@@ -17,7 +18,8 @@ def main():
     options = Options()
     options.add_experimental_option("detach", True)
 
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    driver = webdriver.Chrome(service=Service(
+        ChromeDriverManager().install()), options=options)
 
     driver.get("https://www.iplusinteractif.com/")
     driver.maximize_window()
@@ -30,13 +32,16 @@ def main():
     passwordElement.click()
     passwordElement.send_keys(password)
 
-    sendButton = driver.find_element("xpath", "//*[contains(@class, 'blue button')]")
+    sendButton = driver.find_element(
+        "xpath", "//*[contains(@class, 'blue button')]")
     sendButton.click()
 
     time.sleep(5)
-    accessListElements = driver.find_elements("xpath", "//div[contains(@class, 'accessContainer')]")
+    accessListElements = driver.find_elements(
+        "xpath", "//div[contains(@class, 'accessContainer')]")
     for element in accessListElements:
-        bookName = element.find_element("xpath", ".//h2[@class='access__title']").text
+        bookName = element.find_element(
+            "xpath", ".//h2[@class='access__title']").text
         question1 = input(f"Do you want to copy {bookName}? (yes/no): ")
         if question1 == "yes":
             element.click()
@@ -45,17 +50,20 @@ def main():
             driver.switch_to.window(driver.window_handles[1])
 
             try:
-                closePopup = driver.find_element("xpath", "//*[@class='iplus-l-confBook__commercialPopupCloseBtnTop']")
+                closePopup = driver.find_element(
+                    "xpath", "//*[@class='iplus-l-confBook__commercialPopupCloseBtnTop']")
                 closePopup.click()
                 print("popup closed")
             except:
                 print("no popup")
-            
+
             time.sleep(1)
-            openBook = driver.find_element("xpath", "//a[@class='iplus-l-confBook__itemVolumeCouv coverEffect']")
+            openBook = driver.find_element(
+                "xpath", "//a[@class='iplus-l-confBook__itemVolumeCouv coverEffect']")
             openBook.click()
             time.sleep(3)
-            pageInput = driver.find_element("xpath", "//input[@class='iplus-R-ReactPreviewFrame__pagination_input']")
+            pageInput = driver.find_element(
+                "xpath", "//input[@class='iplus-R-ReactPreviewFrame__pagination_input']")
             pageInput.send_keys('C1')
             pageInput.send_keys(u'\ue007')
             time.sleep(3)
@@ -67,10 +75,12 @@ def main():
             img_count = 1
             while True:
 
-                image = driver.find_element("xpath", "//img[@class='iplus-R-ReactPreviewFrame__page ']")
+                image = driver.find_element(
+                    "xpath", "//img[@class='iplus-R-ReactPreviewFrame__page ']")
                 img_src = image.get_attribute("src")
 
-                driver.execute_script(f'''window.open("{img_src}","_blank");''')
+                driver.execute_script(
+                    f'''window.open("{img_src}","_blank");''')
                 driver.switch_to.window(driver.window_handles[2])
                 time.sleep(1)
                 page = driver.find_element("xpath", "//img")
@@ -99,10 +109,9 @@ def main():
                 # Decode the base64 data
                 image_data = base64.b64decode(base64_data)
 
-                
                 # Specify the file name and format (e.g., 'output.png' for PNG)
-                file_path = os.path.join("imgs",f"{img_count}.png" )
-            
+                file_path = os.path.join("imgs", f"{img_count}.png")
+
                 # Save the image to a file
                 with open(file_path, 'wb') as f:
                     f.write(image_data)
@@ -113,9 +122,11 @@ def main():
                 driver.switch_to.window(driver.window_handles[1])
 
                 try:
-                    next_element = driver.find_element("xpath", "//div[@class='sc-hKMtZM ehqEaE iplus-l-ReactPreviewFrame__paginationArrow__arrowRight']")
+                    next_element = driver.find_element(
+                        "xpath", "//div[@class='sc-hKMtZM ehqEaE iplus-l-ReactPreviewFrame__paginationArrow__arrowRight']")
                 except:
-                    print(f"{img_count} pages from {bookName} was copied successfully!")
+                    print(
+                        f"{img_count} pages from {bookName} was copied successfully!")
                     break
                 driver.execute_script("arguments[0].click();", next_element)
 
@@ -132,8 +143,10 @@ def main():
             print(f"{bookName} was successfully skiped.")
         time.sleep(1)
 
+
 def png_to_pdf(bookName, img_count):
-    question = input("\nWhat would you prefer?\nMake a pdf with the copied pages (1)\nKeep the copied pages as a directory of images (2)\nQuit (3)\n\nAnswer (1, 2 or 3): ")
+    question = input(
+        "\nWhat would you prefer?\nMake a pdf with the copied pages (1)\nKeep the copied pages as a directory of images (2)\nQuit (3)\n\nAnswer (1, 2 or 3): ")
 
     if question == "1":
 
@@ -150,7 +163,6 @@ def png_to_pdf(bookName, img_count):
         # Sort the image file paths based on their names (which are assumed to be integers)
         image_files.sort(key=lambda x: int(os.path.basename(x)[:-4]))
 
-
         # test_images = [ os.path.join("imgs", "1.png"), os.path.join("imgs", "2.png"), os.path.join("imgs", "3.png")]
         # # imagelist is the list with all image filenames
         # print(test_images)
@@ -166,7 +178,6 @@ def png_to_pdf(bookName, img_count):
         clear_imgs()
         print(f"PDF file '{bookName}' created successfully.")
 
-
     elif question == "2":
 
         save_progress(bookName)
@@ -176,22 +187,24 @@ def png_to_pdf(bookName, img_count):
             print(f"You can find {img_count} pages in /{bookName}")
         except:
             os.rename("imgs", "book")
-            print(f"Your book has a weird name.\nYou can find {img_count} pages in /book")
-    
+            print(
+                f"Your book has a weird name.\nYou can find {img_count} pages in /book")
+
     elif question == "3":
         print("You successfully quited!")
         save_progress(bookName)
         clear_imgs()
-        
+
     else:
         print("Chose an option between 1, 2 and 3")
         png_to_pdf()
+
 
 def save_progress(bookName):
 
     # Create the directory if it doesn't exist
     if not os.path.exists("save"):
-        os.makedirs("save")    
+        os.makedirs("save")
 
     try:
         shutil.copytree("imgs", os.path.join("save", bookName))
@@ -201,11 +214,13 @@ def save_progress(bookName):
     except Exception as e:
         print(f"Error: {e}")
 
+
 def clear_imgs():
     try:
         shutil.rmtree("imgs")
 
     except Exception as e:
         print(f"Error: {e}")
+
 
 main()
