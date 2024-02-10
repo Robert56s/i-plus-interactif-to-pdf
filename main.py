@@ -16,6 +16,7 @@ def main():
     print("Initializing...")
 
     options = Options()
+    # options.add_argument("--headless")  # Add this line to run Chrome in headless mode
     options.add_experimental_option("detach", True)
 
     driver = webdriver.Chrome(service=Service(
@@ -76,7 +77,7 @@ def main():
             while True:
 
                 image = driver.find_element(
-                    "xpath", "//img[@class='iplus-R-ReactPreviewFrame__page ']")
+                    "xpath", '//*[@id="iplus-R-ReactPreviewFrame"]/div/div[2]/div/div/div[1]/img')
                 img_src = image.get_attribute("src")
 
                 driver.execute_script(
@@ -150,7 +151,7 @@ def png_to_pdf(bookName, img_count):
 
     if question == "1":
 
-        print("loading ...")
+        print("loading ...\nThis could take a while. Please wait.")
 
         # Initialize a list to store image file paths
         image_files = []
