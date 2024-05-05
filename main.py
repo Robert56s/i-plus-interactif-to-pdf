@@ -37,14 +37,21 @@ def main():
         "xpath", "//*[contains(@class, 'blue button')]")
     sendButton.click()
 
-    time.sleep(5)
+    time.sleep(1)
+
+    cookiesElement = driver.find_element("id", "onetrust-reject-all-handler")
+    if cookiesElement: 
+        cookiesElement.click()
+    
+    time.sleep(4)
+
     accessListElements = driver.find_elements(
         "xpath", "//div[contains(@class, 'accessContainer')]")
     for element in accessListElements:
-        bookName = element.find_element(
-            "xpath", ".//h2[@class='access__title']").text
+        bookName = element.find_element("xpath", ".//h2[@class='access__title']").text
         question1 = input(f"Do you want to copy {bookName}? (yes/no): ")
         if question1 == "yes":
+
             element.click()
             time.sleep(3)
 
@@ -57,6 +64,25 @@ def main():
                 print("popup closed")
             except:
                 print("no popup")
+
+            navVolumes = driver.find_elements("xpath", '//*[@id="iplus-R-confBook"]/div[1]/div/ul/li')
+            if navVolumes:
+                print(f"Multiple volumes found for {bookName}. Please select the volume you want to copy.")
+                volSelected = False
+                for volume in navVolumes:
+                    volName = volume.find_element("xpath", ".//h3").text
+                    q = input(f"Do you want to copy {volName}? (yes/no): ")
+                    if q == "yes":
+                        bookName = volName
+                        volume.click()
+                        volSelected = True
+                        break
+                    else:
+                        print("Volume skipped.")
+
+                if not volSelected:
+                    print("There are no volumes left for this book. Try again.")   
+                    quit()
 
             time.sleep(1)
             openBook = driver.find_element(
