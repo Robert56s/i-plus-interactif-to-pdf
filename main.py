@@ -47,128 +47,139 @@ def main():
 
     accessListElements = driver.find_elements(
         "xpath", "//div[contains(@class, 'accessContainer')]")
-    for element in accessListElements:
+    
+    
+    print("Books found:")
+    for index, element in enumerate(accessListElements):
         bookName = element.find_element("xpath", ".//h2[@class='access__title']").text
-        question1 = input(f"Do you want to copy {bookName}? (yes/no): ")
-        if question1 == "yes":
+        print(f"({index}) -> {bookName}")
+    
+    print("\n")
+    bookIndex = int(input("Which book do you want to copy? (Enter the number): "))
+    element = accessListElements[bookIndex]
+    bookName = element.find_element("xpath", ".//h2[@class='access__title']").text
 
-            element.click()
-            time.sleep(3)
+    question1 = input(f"Do you want to copy {bookName}? (yes/no): ")
+    if question1 == "yes":
 
+        element.click()
+        time.sleep(3)
+
+        driver.switch_to.window(driver.window_handles[1])
+
+        try:
+            closePopup = driver.find_element(
+                "xpath", "//*[@class='iplus-l-confBook__commercialPopupCloseBtnTop']")
+            closePopup.click()
+            print("popup closed")
+        except:
+            print("no popup")
+
+        navVolumes = driver.find_elements("xpath", '//*[@id="iplus-R-confBook"]/div[1]/div/ul/li')
+        if navVolumes:
+            print(f"Multiple volumes found for {bookName}. Please select the volume you want to copy.")
+            volSelected = False
+            for volume in navVolumes:
+                volName = volume.find_element("xpath", ".//h3").text
+                q = input(f"Do you want to copy {volName}? (yes/no): ")
+                if q == "yes":
+                    bookName = volName
+                    volume.click()
+                    volSelected = True
+                    break
+                else:
+                    print("Volume skipped.")
+
+            if not volSelected:
+                print("There are no volumes left for this book. Try again.")   
+                quit()
+
+        time.sleep(1)
+        openBook = driver.find_element(
+            "xpath", "//a[@class='iplus-l-confBook__itemVolumeCouv coverEffect']")
+        openBook.click()
+        time.sleep(3)
+        pageInput = driver.find_element(
+            "xpath", "//input[@class='iplus-R-ReactPreviewFrame__pagination_input']")
+        pageInput.send_keys('C1')
+        pageInput.send_keys(u'\ue007')
+        time.sleep(3)
+
+        # Create the directory if it doesn't exist
+        if not os.path.exists("imgs"):
+            os.makedirs("imgs")
+
+        img_count = 1
+        while True:
+
+            image = driver.find_element(
+                "xpath", '//*[@id="iplus-R-ReactPreviewFrame"]/div/div[2]/div/div/div[1]/img')
+            img_src = image.get_attribute("src")
+
+            driver.execute_script(
+                f'''window.open("{img_src}","_blank");''')
+            driver.switch_to.window(driver.window_handles[2])
+            time.sleep(1)
+            page = driver.find_element("xpath", "//img")
+            page.click()
+            time.sleep(0.3)
+            js = '''// Select the image element on the page
+                    var imgElement = document.querySelector('img');
+
+                    // Create a canvas element to draw the image
+                    var canvas = document.createElement('canvas');
+                    canvas.width = imgElement.width;
+                    canvas.height = imgElement.height;
+                    var ctx = canvas.getContext('2d');
+                    ctx.drawImage(imgElement, 0, 0, imgElement.width, imgElement.height);
+
+                    // Get the base64 data URL
+                    var base64Data = canvas.toDataURL('image/png'); // You can change the format as needed
+
+                    return base64Data
+                '''
+            base64_img = driver.execute_script(js)
+
+            # Extract the base64 data part (after the comma)
+            base64_data = base64_img.split(',')[1]
+
+            # Decode the base64 data
+            image_data = base64.b64decode(base64_data)
+
+            # Specify the file name and format (e.g., 'output.png' for PNG)
+            file_path = os.path.join("imgs", f"{img_count}.png")
+
+            # Save the image to a file
+            with open(file_path, 'wb') as f:
+                f.write(image_data)
+
+            print(f'Page #{img_count} saved in {file_path}')
+
+            driver.close()
             driver.switch_to.window(driver.window_handles[1])
 
             try:
-                closePopup = driver.find_element(
-                    "xpath", "//*[@class='iplus-l-confBook__commercialPopupCloseBtnTop']")
-                closePopup.click()
-                print("popup closed")
+                next_element = driver.find_element(
+                    "xpath", "//div[@class='sc-hKMtZM ehqEaE iplus-l-ReactPreviewFrame__paginationArrow__arrowRight']")
             except:
-                print("no popup")
+                print(
+                    f"{img_count} pages from {bookName} was copied successfully!")
+                break
+            driver.execute_script("arguments[0].click();", next_element)
 
-            navVolumes = driver.find_elements("xpath", '//*[@id="iplus-R-confBook"]/div[1]/div/ul/li')
-            if navVolumes:
-                print(f"Multiple volumes found for {bookName}. Please select the volume you want to copy.")
-                volSelected = False
-                for volume in navVolumes:
-                    volName = volume.find_element("xpath", ".//h3").text
-                    q = input(f"Do you want to copy {volName}? (yes/no): ")
-                    if q == "yes":
-                        bookName = volName
-                        volume.click()
-                        volSelected = True
-                        break
-                    else:
-                        print("Volume skipped.")
+            img_count += 1
 
-                if not volSelected:
-                    print("There are no volumes left for this book. Try again.")   
-                    quit()
-
-            time.sleep(1)
-            openBook = driver.find_element(
-                "xpath", "//a[@class='iplus-l-confBook__itemVolumeCouv coverEffect']")
-            openBook.click()
-            time.sleep(3)
-            pageInput = driver.find_element(
-                "xpath", "//input[@class='iplus-R-ReactPreviewFrame__pagination_input']")
-            pageInput.send_keys('C1')
-            pageInput.send_keys(u'\ue007')
             time.sleep(3)
 
-            # Create the directory if it doesn't exist
-            if not os.path.exists("imgs"):
-                os.makedirs("imgs")
+        driver.close()
+        driver.switch_to.window(driver.window_handles[0])
+        driver.quit()
+        png_to_pdf(bookName, img_count)
 
-            img_count = 1
-            while True:
-
-                image = driver.find_element(
-                    "xpath", '//*[@id="iplus-R-ReactPreviewFrame"]/div/div[2]/div/div/div[1]/img')
-                img_src = image.get_attribute("src")
-
-                driver.execute_script(
-                    f'''window.open("{img_src}","_blank");''')
-                driver.switch_to.window(driver.window_handles[2])
-                time.sleep(1)
-                page = driver.find_element("xpath", "//img")
-                page.click()
-                time.sleep(0.3)
-                js = '''// Select the image element on the page
-                        var imgElement = document.querySelector('img');
-
-                        // Create a canvas element to draw the image
-                        var canvas = document.createElement('canvas');
-                        canvas.width = imgElement.width;
-                        canvas.height = imgElement.height;
-                        var ctx = canvas.getContext('2d');
-                        ctx.drawImage(imgElement, 0, 0, imgElement.width, imgElement.height);
-
-                        // Get the base64 data URL
-                        var base64Data = canvas.toDataURL('image/png'); // You can change the format as needed
-
-                        return base64Data
-                    '''
-                base64_img = driver.execute_script(js)
-
-                # Extract the base64 data part (after the comma)
-                base64_data = base64_img.split(',')[1]
-
-                # Decode the base64 data
-                image_data = base64.b64decode(base64_data)
-
-                # Specify the file name and format (e.g., 'output.png' for PNG)
-                file_path = os.path.join("imgs", f"{img_count}.png")
-
-                # Save the image to a file
-                with open(file_path, 'wb') as f:
-                    f.write(image_data)
-
-                print(f'Page #{img_count} saved in {file_path}')
-
-                driver.close()
-                driver.switch_to.window(driver.window_handles[1])
-
-                try:
-                    next_element = driver.find_element(
-                        "xpath", "//div[@class='sc-hKMtZM ehqEaE iplus-l-ReactPreviewFrame__paginationArrow__arrowRight']")
-                except:
-                    print(
-                        f"{img_count} pages from {bookName} was copied successfully!")
-                    break
-                driver.execute_script("arguments[0].click();", next_element)
-
-                img_count += 1
-
-                time.sleep(3)
-
-            driver.close()
-            driver.switch_to.window(driver.window_handles[0])
-            driver.quit()
-            png_to_pdf(bookName, img_count)
-
-        else:
-            print(f"{bookName} was successfully skiped.")
-        time.sleep(1)
+    else:
+        print("ok, bye!")
+        quit()
+    time.sleep(1)
 
 
 def png_to_pdf(bookName, img_count):
