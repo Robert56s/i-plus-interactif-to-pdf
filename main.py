@@ -8,10 +8,13 @@ import os
 import shutil
 from fpdf import FPDF
 
+from dotenv import load_dotenv
+load_dotenv()
+
 
 def main():
-    email = ""
-    password = ""
+    email = os.getenv('EMAIL')
+    password = os.getenv('PASSWORD')
 
     print("Initializing...")
 
@@ -19,8 +22,11 @@ def main():
     # options.add_argument("--headless")  # Add this line to run Chrome in headless mode
     options.add_experimental_option("detach", True)
 
+    # remove useless console logs
+    options.add_argument("--log-level=3")
+
     driver = webdriver.Chrome(service=Service(
-        ChromeDriverManager().install()), options=options)
+        ChromeDriverManager('').install()), options=options)
 
     driver.get("https://www.iplusinteractif.com/")
     driver.maximize_window()
@@ -55,7 +61,12 @@ def main():
         print(f"({index}) -> {bookName}")
     
     print("\n")
-    bookIndex = int(input("Which book do you want to copy? (Enter the number): "))
+    try:
+        bookIndex = int(input("Which book do you want to copy? (Enter the number): "))
+    except:
+        print("Please enter a number retard.")
+        quit()
+
     element = accessListElements[bookIndex]
     bookName = element.find_element("xpath", ".//h2[@class='access__title']").text
 
@@ -210,7 +221,7 @@ def png_to_pdf(bookName, img_count):
         for image in image_files:
             pdf.add_page("P", (2640, 3263))
             pdf.image(image, 0, 0, 2640, 3263)
-        pdf.output(f"{bookName}.pdf", "F")
+        pdf.output(f"{bookName}.pdf")
 
         save_progress(bookName)
         clear_imgs()
@@ -261,4 +272,4 @@ def clear_imgs():
         print(f"Error: {e}")
 
 
-main()
+png_to_pdf("Physique XXI Tome B, Électricité et magnétisme", 580)   
