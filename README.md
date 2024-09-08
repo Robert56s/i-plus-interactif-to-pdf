@@ -1,4 +1,4 @@
-# i-plus-interactif-to-pdf (v1.01)
+# i-plus-interactif-to-pdf (v1.02)
 
 ## Project Overview
 
@@ -28,7 +28,7 @@ pip install webdriver_manager
 pip install fpdf2
 ```
 
-You need to add you're I+ Interactif email and password to the variables located in the begeninbg of `main()`.
+You need to create a .env and add you're I+ Interactif email and password.
 
 If you're computer is slow, you can increase the value in `time.sleep()`.
 
