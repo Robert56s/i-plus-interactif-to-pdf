@@ -272,4 +272,7 @@ def clear_imgs():
         print(f"Error: {e}")
 
 
-png_to_pdf("Physique XXI Tome B, Électricité et magnétisme", 580)   
+main()
+
+
+# png_to_pdf("bookName", num_of_pages)   
