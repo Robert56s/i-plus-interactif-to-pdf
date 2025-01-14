@@ -85,6 +85,14 @@ def main():
             print("popup closed")
         except:
             print("no popup")
+        
+        try:
+            anotherClosePopup = driver.find_element(
+                "xpath", '//*[@id="commercialpopup"]/div[1]/span[2]')
+            anotherClosePopup.click()
+            print("another popup closed")
+        except:
+            print("another no popup")
 
         navVolumes = driver.find_elements("xpath", '//*[@id="iplus-R-confBook"]/div[1]/div/ul/li')
         if navVolumes:
