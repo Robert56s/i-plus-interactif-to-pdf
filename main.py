@@ -102,7 +102,7 @@ def main():
                 volName = volume.find_element("xpath", ".//h3").text
                 q = input(f"Do you want to copy {volName}? (yes/no): ")
                 if q == "yes":
-                    bookName = volName
+                    bookName = f"{bookName} - {volName}"
                     volume.click()
                     volSelected = True
                     break
@@ -280,7 +280,27 @@ def clear_imgs():
         print(f"Error: {e}")
 
 
-main()
+# Use this funtion to convert saved directories to pdf
+def save_to_pdf():
+    if not os.path.exists("save"):
+        print("No saved progress found.")
+        quit()
+    save_dirs = [d for d in os.listdir("save") if os.path.isdir(os.path.join("save", d))]
+    print(save_dirs)
+    if not save_dirs:
+        print("No saved progress found.")
+        quit()
+    for dir_name in save_dirs:
+        question = input(f"Do you want to convert {dir_name} to pdf? (yes/no): ")
+        if question == "yes":
+            img_count = len([name for name in os.listdir(os.path.join("save", dir_name)) if os.path.isfile(os.path.join("save", dir_name, name))])
+            os.rename(os.path.join("save", dir_name), "imgs")
+            png_to_pdf(dir_name, img_count)
+        else:
+            print(f"Skipping {dir_name}.")
+    
 
 
-# png_to_pdf("bookName", num_of_pages)   
+# main()
+
+save_to_pdf()
