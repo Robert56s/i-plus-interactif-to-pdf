@@ -1,4 +1,4 @@
-/save
-/imgs
-.pdf
-.env
+/save/
+/imgs/
+/*.env
+*.pdf
