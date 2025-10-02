@@ -43,13 +43,13 @@ def main():
         "xpath", "//*[contains(@class, 'blue button')]")
     sendButton.click()
 
-    time.sleep(1)
+    time.sleep(3)
 
     cookiesElement = driver.find_element("id", "onetrust-reject-all-handler")
     if cookiesElement: 
         cookiesElement.click()
     
-    time.sleep(4)
+    time.sleep(7)
 
     accessListElements = driver.find_elements(
         "xpath", "//div[contains(@class, 'accessContainer')]")
@@ -74,13 +74,13 @@ def main():
     if question1 == "yes":
 
         element.click()
-        time.sleep(3)
+        time.sleep(5)
 
         driver.switch_to.window(driver.window_handles[1])
 
         try:
             closePopup = driver.find_element(
-                "xpath", "//*[@class='iplus-l-confBook__commercialPopupCloseBtnTop']")
+                "xpath", '//*[@id="commercialpopup"]/div/div/div[1]/button')
             closePopup.click()
             print("popup closed")
         except:
@@ -94,24 +94,26 @@ def main():
         except:
             print("another no popup")
 
-        navVolumes = driver.find_elements("xpath", '//*[@id="iplus-R-confBook"]/div[1]/div/ul/li')
-        if navVolumes:
-            print(f"Multiple volumes found for {bookName}. Please select the volume you want to copy.")
-            volSelected = False
-            for volume in navVolumes:
-                volName = volume.find_element("xpath", ".//h3").text
-                q = input(f"Do you want to copy {volName}? (yes/no): ")
-                if q == "yes":
-                    bookName = f"{bookName} - {volName}"
-                    volume.click()
-                    volSelected = True
-                    break
-                else:
-                    print("Volume skipped.")
+        # navVolumes = driver.find_elements("xpath", '//*[@id="iplus-R-confBook"]/div[1]/div/ul/li')
+        # if navVolumes:
+        #     print(f"Multiple volumes found for {bookName}. Please select the volume you want to copy.")
+        #     volSelected = False
+        #     for volume in navVolumes:
+        #         volName = volume.find_element("xpath", ".//h3").text
+        #         q = input(f"Do you want to copy {volName}? (yes/no): ")
+        #         if q == "yes":
+        #             bookName = f"{bookName} - {volName}"
+        #             volume.click()
+        #             volSelected = True
+        #             break
+        #         else:
+        #             print("Volume skipped.")
 
-            if not volSelected:
-                print("There are no volumes left for this book. Try again.")   
-                quit()
+        #     if not volSelected:
+        #         print("There are no volumes left for this book. Try again.")   
+        #         quit()
+        # else:
+        #     print("Single volume book.")
 
         time.sleep(1)
         openBook = driver.find_element(
@@ -129,10 +131,11 @@ def main():
             os.makedirs("imgs")
 
         img_count = 1
+        last_page = 0
         while True:
 
             image = driver.find_element(
-                "xpath", '//*[@id="iplus-R-ReactPreviewFrame"]/div/div[2]/div/div/div[1]/img')
+                "xpath", '//*[@id="iplus-R-ReactPreviewFrame"]/div/div[3]/div/div/div[1]/img')
             img_src = image.get_attribute("src")
 
             driver.execute_script(
@@ -176,19 +179,23 @@ def main():
 
             driver.close()
             driver.switch_to.window(driver.window_handles[1])
+   
+            next_element = driver.find_element(
+                "xpath", '//*[@id="iplus-R-ReactPreviewFrame"]/div/div[2]/div[2]')
 
-            try:
-                next_element = driver.find_element(
-                    "xpath", "//div[@class='sc-hKMtZM ehqEaE iplus-l-ReactPreviewFrame__paginationArrow__arrowRight']")
-            except:
+            driver.execute_script("arguments[0].click();", next_element)
+
+            time.sleep(3)
+
+            whatPage = driver.find_element("xpath", '//*[@id="iplus-R-ReactPreviewFrame"]/div/div[1]/div[1]/div[1]/div/input').get_attribute("placeholder")
+            if whatPage == last_page:
                 print(
                     f"{img_count} pages from {bookName} was copied successfully!")
                 break
-            driver.execute_script("arguments[0].click();", next_element)
+            last_page = whatPage
 
             img_count += 1
 
-            time.sleep(3)
 
         driver.close()
         driver.switch_to.window(driver.window_handles[0])
