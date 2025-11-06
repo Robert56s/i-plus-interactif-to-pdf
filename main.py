@@ -138,7 +138,6 @@ class SeleniumDriverManager:
     def _configure_chrome_options(self) -> Options:
         """Configure Chrome options with professional defaults."""
         options = Options()
-        options.add_argument("--log-level=3")
         
         if self.headless:
             options.add_argument("--headless")
@@ -153,6 +152,7 @@ class SeleniumDriverManager:
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-logging")
         options.add_argument("--silent")
+        options.add_argument("--log-level=3")
         
         return options
     
