@@ -27,6 +27,9 @@ pip install webdriver_manager
 ```
 pip install fpdf2
 ```
+```
+pip install python-dotenv
+```
 
 You need to create a .env and add you're I+ Interactif email and password.
 
