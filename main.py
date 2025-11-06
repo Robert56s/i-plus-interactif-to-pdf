@@ -3,7 +3,7 @@
 iPlus Interactif Image Backup Utility - Professional Edition
 A modular, maintainable solution for backing up books from iPlus Interactif website.
 
-Author: Dave Erickson & Robert56s
+Author: DeltaGa & Robert56s
 Version: 2.0.0
 Python: 3.7+
 """
