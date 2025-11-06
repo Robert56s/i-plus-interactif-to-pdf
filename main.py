@@ -55,7 +55,7 @@ class Config:
         'cookies_reject': "onetrust-reject-all-handler",
         'book_containers': "//div[contains(@class, 'accessContainer')]",
         'book_title': ".//h2[@class='access__title']",
-        'popup_close': "//*[@class='iplus-l-confBook__commercialPopupCloseBtnTop']",
+        'popup_close': '//*[@id="commercialpopup"]/div/div/div[1]/button',
         'nav_volumes': '//*[@id="iplus-R-confBook"]/div[1]/div/ul/li',
         'volume_title': ".//h3",
         'open_book': "//a[@class='iplus-l-confBook__itemVolumeCouv coverEffect']",
