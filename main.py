@@ -28,6 +28,10 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 from fpdf import FPDF
 
+from dotenv import load_dotenv
+load_dotenv()
+
+
 
 # ============================================================================
 # CONFIGURATION & CONSTANTS (Atomic Global Variables)
@@ -37,8 +41,8 @@ class Config:
     """Centralized configuration management for easy UI adaptation."""
     
     # Authentication
-    DEFAULT_EMAIL = "YOUR_EMAIL_HERE"
-    DEFAULT_PASSWORD = "YOUR_PASSWORD_HERE"
+    DEFAULT_EMAIL = os.getenv('EMAIL')
+    DEFAULT_PASSWORD = os.getenv('PASSWORD')
     
     # Website URLs and structure
     BASE_URL = "https://www.iplusinteractif.com/"
