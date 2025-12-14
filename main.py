@@ -327,7 +327,7 @@ class iPlusInteractifNavigator:
             if not nav_volumes:
                 return "None"  # Single volume book
                 
-            print(f"\nMultiple volumes detected. Please select:")
+            print("\nMultiple volumes detected. Please select:")
             
             for volume in nav_volumes:
                 try:
@@ -364,17 +364,7 @@ class iPlusInteractifNavigator:
             open_book_button.click()
             
             time.sleep(Config.TIMEOUTS['navigation'])
-            
-            # Navigate to cover page (C1)
-            page_input = self.wait.until(
-                EC.element_to_be_clickable((By.XPATH, Config.SELECTORS['page_input']))
-            )
-            page_input.clear()
-            page_input.send_keys('C1')
-            page_input.send_keys(u'\ue007')  # Enter key
-            
-            time.sleep(Config.TIMEOUTS['navigation'])
-            
+             
             self.logger.info("Book viewer opened successfully")
             return True
             
@@ -382,6 +372,24 @@ class iPlusInteractifNavigator:
             self.logger.error(f"Failed to open book viewer: {e}")
             return False
 
+    def go_to_page(self, start_page):
+        page_string = "C1" if start_page == 0 else str(start_page)
+
+        try:
+            page_input = self.wait.until(
+                EC.element_to_be_clickable((By.XPATH, Config.SELECTORS['page_input']))
+            )
+            page_input.clear()
+            page_input.send_keys(page_string)
+            page_input.send_keys(u'\ue007')
+
+            time.sleep(Config.TIMEOUTS['navigation'])
+
+            self.logger.info(f"Page {start_page} opened successfully")
+            return True
+        except Exception as e:
+            self.logger.error(f"Failed to open book at page {start_page}: {e}")
+            return False
 
 # ============================================================================
 # IMAGE PROCESSING ENGINE
@@ -403,17 +411,20 @@ class ImageProcessor:
             os.makedirs(self.output_dir)
             self.logger.info(f"Created output directory: {self.output_dir}")
     
-    def process_book_pages(self) -> ProcessingStats:
-        """Process all pages in the current book."""
+    def process_book_pages(self, start_page: int, end_page: int) -> ProcessingStats:
+        """Process pages in the current book."""
         self.stats = ProcessingStats()
         self.stats.start_time = time.time()
         
         try:
             while True:
-                success = self._process_current_page()
+                success = self._process_current_page(start_page)
                 if not success:
                     break
                     
+                if end_page != 0 and (start_page + self.stats.pages_processed) == end_page:
+                    break
+
                 if not self._navigate_to_next_page():
                     self.logger.info("Reached end of book")
                     break
@@ -430,7 +441,7 @@ class ImageProcessor:
         self.logger.info(f"Processing complete: {self.stats.pages_processed} pages processed")
         return self.stats
     
-    def _process_current_page(self) -> bool:
+    def _process_current_page(self, start_page: int) -> bool:
         """Process the current page image."""
         try:
             # Locate main image
@@ -458,13 +469,14 @@ class ImageProcessor:
                 return False
             
             # Save image
-            self._save_base64_image(base64_data, self.stats.pages_processed)
+            page_index = self.stats.pages_processed + start_page
+            self._save_base64_image(base64_data, page_index)
             
             # Cleanup - close current tab and return to book viewer
             self.driver.close()
             self.driver.switch_to.window(self.driver.window_handles[1])
             
-            print(f'Page #{self.stats.pages_processed} saved successfully')
+            print(f'Page #{page_index} saved successfully')
             return True
             
         except Exception as e:
@@ -696,7 +708,7 @@ class iPlusInteractifBackupUtility:
         self.output_processor = OutputProcessor()
         self.logger = logging.getLogger(__name__)
         
-        print("🎨 iPlus Interactif Professional Backup Utility v2.0")
+        print("🎨 iPlus Interactif Professional Backup Utility v3.0")
         print("=" * 50)
     
     def run(self):
@@ -737,14 +749,23 @@ class iPlusInteractifBackupUtility:
                 # Update book name with volume if applicable
                 final_book_name = volume_name or selected_book.title
                 
-                # Step 5: Open Book Viewer
+                # Step 5: Resume & End page (incase of errors or IP block in a previous run)
+                start_page, end_page = self.prompt_download_range()
+                if start_page > end_page:
+                    print("❌ invalid page selection range")
+
+                # Step 6: Open Book At Requested Page
                 if not navigator.open_book_viewer():
                     print("❌ Failed to open book viewer.")
                     return False
+
+                if not navigator.go_to_page(start_page):
+                    print(f"❌ Failed to open book at page {start_page}.")
+                    return False
                 
-                # Step 6: Process Images
+                # Step 7: Process Images
                 processor = ImageProcessor(driver)
-                stats = processor.process_book_pages()
+                stats = processor.process_book_pages(start_page, end_page)
                 
                 if stats.pages_processed == 0:
                     print("❌ No pages were processed successfully.")
@@ -756,7 +777,7 @@ class iPlusInteractifBackupUtility:
                 if stats.errors_encountered > 0:
                     print(f"⚠️  Warnings: {stats.errors_encountered} pages had issues")
                 
-                # Step 7: Output Processing
+                # Step 8: Output Processing
                 self.output_processor.process_output(final_book_name, stats.pages_processed)
                 
                 print("\n🎉 Backup operation completed successfully!")
@@ -765,11 +786,35 @@ class iPlusInteractifBackupUtility:
         except KeyboardInterrupt:
             print("\n⏹️  Operation cancelled by user.")
             return False
+
         except Exception as e:
             self.logger.error(f"Unexpected error: {e}")
             print(f"❌ An unexpected error occurred: {e}")
             return False
     
+    def prompt_download_range(self) -> tuple[int, int]:
+        """Asks user for start and end pages to support resuming downloads."""
+        print("\n👉 Download Range Configuration (incase of error or IP-block in previous run)")
+        
+        # Get Start Page
+        try:
+            start_input = input("Start download at page # (start of book = 0): ").strip()
+            start_page = int(start_input) if start_input else 0
+        except ValueError:
+            print("Invalid input, defaulting to start of book.")
+            start_page = 0
+
+        # Get End Page
+        try:
+            end_input = input("Stop at page # (End of book = 0): ").strip()
+            end_page = int(end_input) if end_input else 0
+        except ValueError:
+            print("Invalid input, defaulting to end of book.")
+            end_page = 0
+            
+        print("")
+        return start_page, end_page
+
     def _display_and_select_books(self, books: List[BookInfo]) -> Optional[BookInfo]:
         """Display available books and handle user selection."""
         print("\n📚 Available Books:")
