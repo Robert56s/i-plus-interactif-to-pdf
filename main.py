@@ -3,7 +3,7 @@
 iPlus Interactif Image Backup Utility - Professional Edition
 A modular, maintainable solution for backing up books from iPlus Interactif website.
 
-Author: DeltaGa & Robert56s
+Author: DeltaGa & Robert56s & RedeemedSpoon
 Version: 2.0.0
 Python: 3.7+
 """
@@ -12,25 +12,27 @@ import os
 import time
 import base64
 import shutil
-from typing import List, Optional, Tuple, Dict, Any
-from dataclasses import dataclass
-from enum import Enum
-from contextlib import contextmanager
 import logging
+from fpdf import FPDF
+from enum import Enum
+from typing import List, Optional, Any
+from contextlib import contextmanager
+from dataclasses import dataclass
 
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
-from webdriver_manager.chrome import ChromeDriverManager
-from fpdf import FPDF
+from selenium.webdriver.chrome.options import Options
+
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
 from dotenv import load_dotenv
 load_dotenv()
-
 
 
 # ============================================================================
@@ -41,8 +43,9 @@ class Config:
     """Centralized configuration management for easy UI adaptation."""
     
     # Authentication
-    DEFAULT_EMAIL = os.getenv('EMAIL')
-    DEFAULT_PASSWORD = os.getenv('PASSWORD')
+    DEFAULT_EMAIL = os.getenv('EMAIL') or ""
+    DEFAULT_PASSWORD = os.getenv('PASSWORD') or ""
+    DEFAULT_BROWSER = os.getenv("BROWSER") or ""
     
     # Website URLs and structure
     BASE_URL = "https://www.iplusinteractif.com/"
@@ -124,7 +127,7 @@ class SeleniumDriverManager:
     def __init__(self, headless: bool = False, detach: bool = True):
         self.headless = headless
         self.detach = detach
-        self.driver: Optional[webdriver.Chrome] = None
+        self.driver: Optional[webdriver.Chrome | webdriver.Firefox] = None
         self._setup_logging()
     
     def _setup_logging(self):
@@ -135,8 +138,8 @@ class SeleniumDriverManager:
         )
         self.logger = logging.getLogger(__name__)
     
-    def _configure_chrome_options(self) -> Options:
-        """Configure Chrome options with professional defaults."""
+    def _configure_browser_options(self) -> Options:
+        """Configure browser options with professional defaults."""
         options = Options()
         
         if self.headless:
@@ -160,14 +163,25 @@ class SeleniumDriverManager:
     def get_driver(self):
         """Context manager for safe driver lifecycle management."""
         try:
-            options = self._configure_chrome_options()
-            service = Service(ChromeDriverManager().install())
-            
-            self.driver = webdriver.Chrome(service=service, options=options)
+            options = self._configure_browser_options()
+
+            if Config.DEFAULT_BROWSER == "chrome":
+                options = ChromeOptions()
+                service = ChromeService() 
+                self.driver = webdriver.Chrome(service=service, options=options)
+
+            elif Config.DEFAULT_BROWSER == "firefox":
+                options = FirefoxOptions()
+                service = FirefoxService()
+                self.driver = webdriver.Firefox(service=service, options=options)
+
+            else:
+                raise ValueError("Unsupported browser")
+                
             self.driver.implicitly_wait(Config.TIMEOUTS['implicit_wait'])
             self.driver.maximize_window()
             
-            self.logger.info("Chrome driver initialized successfully")
+            self.logger.info("Browser driver initialized successfully")
             yield self.driver
             
         except Exception as e:
@@ -181,7 +195,7 @@ class SeleniumDriverManager:
         if self.driver:
             try:
                 self.driver.quit()
-                self.logger.info("Chrome driver cleaned up successfully")
+                self.logger.info("Browser driver cleaned up successfully")
             except Exception as e:
                 self.logger.warning(f"Driver cleanup warning: {e}")
 
@@ -189,7 +203,7 @@ class SeleniumDriverManager:
 class iPlusInteractifNavigator:
     """High-level navigation and interaction with iPlus Interactif website."""
     
-    def __init__(self, driver: webdriver.Chrome):
+    def __init__(self, driver: webdriver.Chrome | webdriver.Firefox):
         self.driver = driver
         self.wait = WebDriverWait(driver, Config.TIMEOUTS['page_load'])
         self.logger = logging.getLogger(__name__)
@@ -286,7 +300,7 @@ class iPlusInteractifNavigator:
             
             # Check for multiple volumes
             selected_volume = self._handle_volume_selection()
-            if selected_volume is False:  # User cancelled volume selection
+            if selected_volume is None:  # User cancelled volume selection
                 return None
                 
             book.selected_volume = selected_volume
@@ -333,7 +347,7 @@ class iPlusInteractifNavigator:
                     continue
             
             print("No volumes selected.")
-            return False  # Signal user cancellation
+            return None  # Signal user cancellation
             
         except Exception as e:
             self.logger.error(f"Volume selection failed: {e}")
@@ -376,7 +390,7 @@ class iPlusInteractifNavigator:
 class ImageProcessor:
     """Professional image extraction and processing system."""
     
-    def __init__(self, driver: webdriver.Chrome, output_dir: str = Config.TEMP_DIR):
+    def __init__(self, driver: webdriver.Chrome | webdriver.Firefox, output_dir: str = Config.TEMP_DIR):
         self.driver = driver
         self.output_dir = output_dir
         self.logger = logging.getLogger(__name__)
