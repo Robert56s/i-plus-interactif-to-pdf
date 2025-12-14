@@ -1,4 +1,4 @@
-# i-plus-interactif-to-pdf
+# i-plus-interactif-to-pdf (v3.0)
 
 ## Project Overview
 
