@@ -1,0 +1,4 @@
+selenium
+webdriver_manager
+fpdf2
+python-dotenv
