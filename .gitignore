@@ -1,5 +1,5 @@
 /save/
 /imgs/
-*.env
+/*.env
 *.pdf
 *.vscode
