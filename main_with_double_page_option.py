@@ -4,6 +4,7 @@ iPlus Interactif Image Backup Utility - Functional Edition
 A functional solution for backing up books from iPlus Interactif website.
 
 Author: DeltaGa & Robert56s
+Double page mode: Kaloo234
 Version: 3.0.0 (Functional)
 Python: 3.7+
 """
