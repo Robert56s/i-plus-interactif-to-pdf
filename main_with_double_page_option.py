@@ -926,5 +926,3 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\n👋 Goodbye!")
         exit(0)
-
-#process_output("Santé_et_activité_physique_-_3e_édition", 291)
