@@ -2,4 +2,4 @@
 /imgs/
 /*.env
 *.pdf
-*.vscode
+.vscode/
