@@ -4,7 +4,8 @@ iPlus Interactif Image Backup Utility - Functional Edition
 A functional solution for backing up books from iPlus Interactif website.
 
 Author: DeltaGa & Robert56s
-Version: 3.0.0 (Functional)
+Double page mode: Kaloo234
+Version: 3.1.0 (Functional)
 Python: 3.7+
 """
 
@@ -52,15 +53,21 @@ SELECTORS = {
     'open_book': "//a[@class='iplus-l-confBook__itemVolumeCouv coverEffect']",
     'page_input': "//input[@class='iplus-R-ReactPreviewFrame__pagination_input']",
     'main_image': '//*[@id="iplus-R-ReactPreviewFrame"]/div/div[3]/div/div/div[1]/img',
-    'next_arrow': "//div[contains(@class, 'iplus-l-ReactPreviewFrame__paginationArrow__arrowRight')]"
+    'next_arrow': "//div[contains(@class, 'iplus-l-ReactPreviewFrame__paginationArrow__arrowRight')]",
+
+    'main_image_double_page': "//div[contains(@class, 'iplus-R-ReactPreviewFrame__containerDoublePage')]//img",
+    'view_mode_link': "//div[@class='iplus-R-ReactNavToolbar']/div[10]/div/a",
+    'double_page_link': "//a[contains(@class,'iplus-R-ReactPreviewFrame__toolsPageTemplatePageDouble')]",
+    'one_page_link': "//a[contains(@class,'iplus-R-ReactPreviewFrame__toolsPageTemplatePageSingle')]",
+    'tool_bar': "//nav[contains(@class, 'iplus-R-ReactPreviewFrame__toolsPageItems')]"
 }
 
 # Timing configurations
 TIMEOUTS = {
     'implicit_wait': 10,
-    'page_load': 30,
-    'navigation': 3,
-    'post_click': 1
+    'page_load': 10,
+    'navigation': 4,
+    'post_click': 4
 }
 
 # File system
@@ -294,6 +301,48 @@ def open_book_viewer(driver):
     except Exception as e:
         print(f"Failed to open book viewer: {e}")
         return False
+    
+
+def set_view_mode(driver, is_double_page):
+    try:
+        wait = WebDriverWait(driver, TIMEOUTS['page_load'])
+
+        tool_bar_element= driver.find_element(By.XPATH, SELECTORS['tool_bar'])
+
+        lst = tool_bar_element.get_attribute('class').split(" ")
+
+        if is_double_page:
+            if 'currentDoublePage\n' in lst:
+                return True
+            
+            view_mode_element = wait.until(
+                EC.element_to_be_clickable((By.XPATH, SELECTORS['view_mode_link']))
+            )
+            view_mode_element.click()
+            time.sleep(2)
+            double_page_element = wait.until(
+                EC.element_to_be_clickable((By.XPATH, SELECTORS['double_page_link']))
+            )
+            driver.execute_script("arguments[0].click();", double_page_element)
+        else:
+            if 'currentOnePage\n' in lst:
+                return True
+            
+            view_mode_element = wait.until(
+                EC.element_to_be_clickable((By.XPATH, SELECTORS['view_mode_link']))
+            )
+            view_mode_element.click()
+            time.sleep(2)
+            double_page_element = wait.until(
+                EC.element_to_be_clickable((By.XPATH, SELECTORS['one_page_link']))
+            )
+            driver.execute_script("arguments[0].click();", double_page_element)
+
+        time.sleep(TIMEOUTS['navigation'])
+        return True
+    except Exception as e:
+        print(e)
+        return False
 
 
 # ============================================================================
@@ -389,6 +438,100 @@ def process_current_page(driver, page_number):
     except Exception as e:
         print(f"Error processing page {page_number}: {e}")
         return False
+    
+
+def process_left_page(driver, page_number):
+    """Process the current left page image."""
+    try:
+        # Locate main image
+        image_element = driver.find_elements(By.XPATH, SELECTORS['main_image_double_page'])[0]
+        img_src = image_element.get_attribute("src")
+        img_width = image_element.get_dom_attribute("width")
+
+        if not img_src:
+            print("No image source found")
+            return False
+        
+        if int(img_width) < 10:
+            print("No left page")
+            return False
+        
+        # Open image in new tab
+        driver.execute_script(f'window.open("{img_src}","_blank");')
+        driver.switch_to.window(driver.window_handles[2])
+        
+        time.sleep(TIMEOUTS['post_click'])
+        
+        # Click to ensure image is loaded
+        page_image = driver.find_element(By.XPATH, "//img")
+        page_image.click()
+        time.sleep(0.3)
+        
+        # Extract image using JavaScript canvas technique
+        base64_data = extract_image_as_base64(driver)
+        if not base64_data:
+            return False
+        
+        # Save image
+        save_base64_image(base64_data, page_number)
+        
+        # Cleanup - close current tab and return to book viewer
+        driver.close()
+        driver.switch_to.window(driver.window_handles[1])
+        
+        print(f'Page #{page_number} saved successfully')
+        return True
+        
+    except Exception as e:
+        print(f"Error processing page {page_number}: {e}")
+        return False
+    
+
+def process_right_page(driver, page_number):
+    """Process the current right page image."""
+    try:
+        # Locate main image
+        image_element = driver.find_elements(By.XPATH, SELECTORS['main_image_double_page'])[1]
+        img_src = image_element.get_attribute("src")
+        img_width = image_element.get_dom_attribute("width")
+
+        if not img_src:
+            print("No image source found")
+            return False
+        
+        if int(img_width) < 10:
+            print("No right page")
+            return False
+        
+        # Open image in new tab
+        driver.execute_script(f'window.open("{img_src}","_blank");')
+        driver.switch_to.window(driver.window_handles[2])
+        
+        time.sleep(TIMEOUTS['post_click'])
+        
+        # Click to ensure image is loaded
+        page_image = driver.find_element(By.XPATH, "//img")
+        page_image.click()
+        time.sleep(0.3)
+        
+        # Extract image using JavaScript canvas technique
+        base64_data = extract_image_as_base64(driver)
+        if not base64_data:
+            return False
+        
+        # Save image
+        save_base64_image(base64_data, page_number)
+        
+        # Cleanup - close current tab and return to book viewer
+        driver.close()
+        driver.switch_to.window(driver.window_handles[1])
+        
+        print(f'Page #{page_number} saved successfully')
+        return True
+        
+    except Exception as e:
+        print(f"Error processing page {page_number}: {e}")
+        return False
 
 
 def navigate_to_next_page(driver):
@@ -432,7 +575,7 @@ def navigate_to_next_page(driver):
         return False
 
 
-def process_book_pages(driver):
+def process_book_pages(driver, double_page_mode):
     """Process all pages in the current book."""
     ensure_output_directory()
     
@@ -443,12 +586,27 @@ def process_book_pages(driver):
     try:
         while True:
             # Process current page
-            success = process_current_page(driver, pages_processed)
-            
-            if success:
-                pages_processed += 1
+            if not double_page_mode:
+                success = process_current_page(driver, pages_processed)
+                
+                if success:
+                    pages_processed += 1
+                else:
+                    errors_encountered += 1
             else:
-                errors_encountered += 1
+                success = process_left_page(driver, pages_processed)
+
+                if success:
+                    pages_processed += 1
+                else:
+                    errors_encountered += 1
+
+                success = process_right_page(driver, pages_processed)
+
+                if success:
+                    pages_processed += 1
+                else:
+                    errors_encountered += 1
             
             # Try to navigate to next page
             time.sleep(TIMEOUTS['post_click'])
@@ -663,6 +821,10 @@ def confirm_book_selection(book):
     confirmation = input(f"\n📖 Backup '{book['title']}'? (yes/no): ").lower().strip()
     return confirmation in ('yes', 'y')
 
+def double_page_mode_selection():
+    anwser = input("\nUse double page mode? (yes/no): ").lower().strip()
+    return anwser in ('yes', 'y')
+
 
 # ============================================================================
 # MAIN WORKFLOW
@@ -708,6 +870,9 @@ def main():
         elif volume_name == "None":
             volume_name = None  # Single volume book
         
+        # Step 5b: Page Disposition Selection
+        double_page_mode = double_page_mode_selection()
+
         # Update book name with volume if applicable
         final_book_name = volume_name or selected_book['title']
         
@@ -716,8 +881,13 @@ def main():
             print("❌ Failed to open book viewer.")
             return False
         
+        # Step 6b: Set view mode
+        if not set_view_mode(driver, double_page_mode):
+            print("❌ Failed to set page view.")
+            return False
+        
         # Step 7: Process Images
-        pages_processed, errors_encountered = process_book_pages(driver)
+        pages_processed, errors_encountered = process_book_pages(driver, double_page_mode)
         
         if pages_processed == 0:
             print("❌ No pages were processed successfully.")

@@ -33,5 +33,5 @@ pip install python-dotenv
 
 You need to create a .env and add you're I+ Interactif email and password.
 
-If you're computer is slow, you can increase the value in `time.sleep()`.
+If you're computer is slow, you can increase the value in `TIMEOUTS`.
 
