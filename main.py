@@ -56,7 +56,7 @@ SELECTORS = {
     'next_arrow': "//div[contains(@class, 'iplus-l-ReactPreviewFrame__paginationArrow__arrowRight')]",
 
     'main_image_double_page': "//div[contains(@class, 'iplus-R-ReactPreviewFrame__containerDoublePage')]//img",
-    'view_mode_link': "//div[@class='iplus-R-ReactNavToolbar']/div[10]/div/a",
+    'view_mode_link': "//a[contains(@class, 'iplus-R-ReactPreviewFrame__toolsPageTemplatePage')]",
     'double_page_link': "//a[contains(@class,'iplus-R-ReactPreviewFrame__toolsPageTemplatePageDouble')]",
     'one_page_link': "//a[contains(@class,'iplus-R-ReactPreviewFrame__toolsPageTemplatePageSingle')]",
     'tool_bar': "//nav[contains(@class, 'iplus-R-ReactPreviewFrame__toolsPageItems')]"
